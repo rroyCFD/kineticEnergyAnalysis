@@ -25,7 +25,7 @@ Class
     Foam::kineticEnergyAnalysis
 
 Description
-    Coriolis force object
+    Term-by-term kinetic energy analysis object
 
 SourceFiles
     kineticEnergyAnalysis.C
@@ -61,7 +61,7 @@ class kineticEnergyAnalysis
         const fvMesh& mesh_;
 
         // Pointer to solver fields
-        //- Extrapolated velocity field pointer
+        //velocity field pointer
         const volVectorField& U_;
 
         // pressure field pointer
@@ -96,10 +96,6 @@ public:
 
 
     // Public Member functions
-
-        //- Update Coriolis force
-        void update();
-
         void analyzeKEBalance();
 };
 
