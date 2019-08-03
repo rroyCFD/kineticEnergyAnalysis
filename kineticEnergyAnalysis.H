@@ -70,10 +70,10 @@ class kineticEnergyAnalysis
         const word convName_;
 
     // Private member function
-        volScalarField getTemporalKE();
-        volScalarField getConvectionKE();
-        volScalarField getPGradKE();
-        volScalarField getDissipationKE();
+        tmp<volScalarField> getTemporalKE();
+        tmp<volScalarField> getConvectionKE();
+        tmp<volScalarField> getPGradKE();
+        tmp<volScalarField> getDissipationKE();
 
 
 public:

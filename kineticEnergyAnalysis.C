@@ -34,82 +34,99 @@ namespace Foam
 
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
-volScalarField Foam::kineticEnergyAnalysis::getTemporalKE()
+tmp<volScalarField> Foam::kineticEnergyAnalysis::getTemporalKE()
 {
-    volScalarField temporalKE
+    tmp<volScalarField> tTemporalKE
     (
-        IOobject
+        new volScalarField
         (
-            "temporalKE",
-            U_.instance(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        (U_ & (U_ - U_.oldTime())/runTime_.deltaT())
+            IOobject
+            (
+                "temporalKE",
+                U_.instance(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            (U_ & (U_ - U_.oldTime())/runTime_.deltaT())
+        )
     );
+    volScalarField& temporalKE = tTemporalKE.ref();
     temporalKE.write(runTime_.outputTime());
-
 
     scalar sumTemporalKE = gSum(temporalKE.primitiveFieldRef() * mesh_.V());
     Info << "sum of temporalDerivative KE: " << sumTemporalKE << endl;
-    return temporalKE;
+
+    return tTemporalKE;
 }
 
-volScalarField Foam::kineticEnergyAnalysis::getConvectionKE()
+tmp<volScalarField> Foam::kineticEnergyAnalysis::getConvectionKE()
 {
     const volVectorField& C_ = mesh_.lookupObject<volVectorField>(convName_);
 
-
-    volScalarField convKE
+    tmp<volScalarField> tConvKE
     (
-        IOobject
+        new volScalarField
         (
-            "convKE",
-            U_.instance(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        (U_ & C_)
+            IOobject
+            (
+                "convKE",
+                U_.instance(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            (U_ & C_)
+        )
     );
+    volScalarField& convKE = tConvKE.ref();
     convKE.write(runTime_.outputTime());
-
 
     scalar sumConvKE = gSum(convKE.primitiveFieldRef() * mesh_.V());
     Info << "sum of convection KE: " << sumConvKE << endl;
-    return convKE;
+
+    return tConvKE;
 }
 
-volScalarField Foam::kineticEnergyAnalysis::getPGradKE()
+tmp<volScalarField> Foam::kineticEnergyAnalysis::getPGradKE()
 {
     // Approach 3: (use least square pressure gradient)
     // volVectorField pGradLS_
     //               ("pGradLS", mesh_.lookupObject<volVectorField>("pGradLS"));
 
-    volScalarField pGradKE
+    tmp<volScalarField> tPGradKE
     (
-        IOobject
+        new volScalarField
         (
-            "pGradKE",
-            U_.instance(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        (U_ & fvc::grad(p_)) // Approach 1
-        // (U_ & fvc::reconstruct(fvc::snGrad(p_)* mesh_.magSf())) // Approach 2
-        // (U_ & pGradLS_) // Approach 3
+            IOobject
+            (
+                "pGradKE",
+                U_.instance(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            // mesh_,
+            // dimensionedScalar("", dimensionSet(0, 2, -3, 0, 0, 0, 0), 0)
+            (U_ & fvc::grad(p_)) // Approach 1
+            // (U_ & fvc::reconstruct(fvc::snGrad(p_)* mesh_.magSf())) // Approach 2
+            // (U_ & pGradLS_) // Approach 3
+        )
     );
+    // alternate way for assignment
+    // tPGradKE.ref() = (U_ & fvc::grad(p_)); // Approach 1
+
+    volScalarField& pGradKE = tPGradKE.ref();
     pGradKE.write(runTime_.outputTime());
 
     scalar sumPGradKE = gSum(pGradKE.primitiveFieldRef() * mesh_.V());
     Info << "sum of pGrad KE: " << sumPGradKE << endl;
-    return pGradKE;
+
+    return tPGradKE;
 }
 
 
-volScalarField Foam::kineticEnergyAnalysis::getDissipationKE()
+tmp<volScalarField> Foam::kineticEnergyAnalysis::getDissipationKE()
 {
     // Calculate dissipation
     tmp<volScalarField> nuEff_
@@ -120,51 +137,74 @@ volScalarField Foam::kineticEnergyAnalysis::getDissipationKE()
         ).nuEff()
     );
 
-    volScalarField dissipKE
+    tmp<volScalarField> tDissipKE
     (
-        IOobject
+        new volScalarField
         (
-            "dissipKE",
-            U_.instance(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        U_ & (  fvc::laplacian(nuEff_.ref(), U_)
-              + fvc::div(nuEff_.ref()*dev(T(fvc::grad(U_))))
-             )
+            IOobject
+            (
+                "dissipKE",
+                U_.instance(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            U_ & (  fvc::laplacian(nuEff_.ref(), U_)
+                  + fvc::div(nuEff_.ref()*dev(T(fvc::grad(U_))))
+                 )
+        )
     );
-    dissipKE.write(runTime_.outputTime());
     nuEff_.clear();
+
+    volScalarField& dissipKE = tDissipKE.ref();
+    dissipKE.write(runTime_.outputTime());
 
     scalar sumDissipKE = gSum(dissipKE.primitiveFieldRef() * mesh_.V());
     Info << "sum of dissipation KE: " << sumDissipKE << endl;
-    return dissipKE;
+
+    return tDissipKE;
 }
 
 
 void Foam::kineticEnergyAnalysis::analyzeKEBalance()
 {
-    volScalarField KEbalance
-    (
-        IOobject
-        (
-            "KEbalance",
-            U_.instance(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar("", dimensionSet(0, 2, -3, 0, 0, 0, 0), 0)
-    );
+    // debug purpose: code check!
+    // volScalarField temporalKE = getTemporalKE();
+    // volScalarField convKE     = getConvectionKE();
+    // volScalarField pGradKE    = getPGradKE();
+    // volScalarField dissipKE   = getDissipationKE();
 
-    KEbalance.primitiveFieldRef() =
-        (  getTemporalKE()
-         + getConvectionKE()
-         + getPGradKE()
-         - getDissipationKE()
-         );
+
+    tmp<volScalarField> tKEbalance
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "KEbalance",
+                U_.instance(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            // mesh_,
+            // dimensionedScalar("", dimensionSet(0, 2, -3, 0, 0, 0, 0), 0)
+            (  getTemporalKE()
+             + getConvectionKE()
+             + getPGradKE()
+             - getDissipationKE()
+            )
+        )
+    );
+    // alternate way for assignment
+    // tKEbalance.ref() =
+    //     (  getTemporalKE()
+    //      + getConvectionKE()
+    //      + getPGradKE()
+    //      - getDissipationKE()
+    //     );
+
+    volScalarField& KEbalance = tKEbalance.ref();
     KEbalance.write(runTime_.outputTime());
 
     scalar sumKEbalance = gSum(KEbalance.primitiveFieldRef() * mesh_.V());
