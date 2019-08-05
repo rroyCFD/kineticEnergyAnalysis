@@ -214,6 +214,43 @@ void Foam::kineticEnergyAnalysis::analyzeKEBalance()
 }
 
 
+
+void Foam::kineticEnergyAnalysis::getPPGradDiffKE()
+{
+    const volScalarField& pp_ = mesh_.lookupObject<volScalarField>("pp");
+
+    tmp<volScalarField> tppGradDiffKE
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "ppGradDiffKE",
+                pp_.instance(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            // mesh_,
+            // dimensionedScalar("", dimensionSet(0, 2, -3, 0, 0, 0, 0), 0)
+            U_&
+            ((fvc::grad(pp_)-fvc::reconstruct(fvc::snGrad(pp_)* mesh_.magSf())))
+        )
+    );
+
+    // tppGradDiffKE.ref() =
+    //     U_& ((fvc::grad(pp_)-fvc::reconstruct(fvc::snGrad(pp_)* mesh_.magSf())));
+
+    volScalarField& ppGradDiffKE = tppGradDiffKE.ref();
+    ppGradDiffKE.write(runTime_.outputTime());
+
+    scalar sumPPGradDiffKE = gSum(ppGradDiffKE.primitiveFieldRef() * mesh_.V());
+    Info << "sum of ppGradDiff KE: " << sumPPGradDiffKE << endl;
+
+    return;
+}
+
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::kineticEnergyAnalysis::kineticEnergyAnalysis

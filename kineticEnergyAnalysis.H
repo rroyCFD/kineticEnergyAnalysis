@@ -97,6 +97,8 @@ public:
 
     // Public Member functions
         void analyzeKEBalance();
+
+        void getPPGradDiffKE();
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
