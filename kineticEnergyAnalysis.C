@@ -48,7 +48,7 @@ tmp<volScalarField> Foam::kineticEnergyAnalysis::getTemporalKE()
                 IOobject::NO_READ,
                 IOobject::NO_WRITE
             ),
-            (U_ & (U_ - U_.oldTime())/runTime_.deltaT()) // Euler approximation
+            (U_ & fvc::ddt(U_))
         )
     );
     volScalarField& temporalKE = tTemporalKE.ref();
