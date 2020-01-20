@@ -64,10 +64,11 @@ class kineticEnergyAnalysis
         //velocity field pointer
         const volVectorField& U_;
 
+        // velocity flux field pointer
+        const surfaceScalarField& phi_;
+
         // pressure field pointer
         const volScalarField& p_;
-
-        const word convName_;
 
     // Private member function
         tmp<volScalarField> getTemporalKE();
@@ -86,8 +87,8 @@ public:
     kineticEnergyAnalysis
     (
         const volVectorField& U,
-        const volScalarField& p,
-        const word convName
+        const surfaceScalarField& phi,
+        const volScalarField& p
     );
 
 

@@ -48,7 +48,7 @@ tmp<volScalarField> Foam::kineticEnergyAnalysis::getTemporalKE()
                 IOobject::NO_READ,
                 IOobject::NO_WRITE
             ),
-            (U_ & (U_ - U_.oldTime())/runTime_.deltaT())
+            (U_ & (U_ - U_.oldTime())/runTime_.deltaT()) // Euler approximation
         )
     );
     volScalarField& temporalKE = tTemporalKE.ref();
@@ -62,8 +62,6 @@ tmp<volScalarField> Foam::kineticEnergyAnalysis::getTemporalKE()
 
 tmp<volScalarField> Foam::kineticEnergyAnalysis::getConvectionKE()
 {
-    const volVectorField& C_ = mesh_.lookupObject<volVectorField>(convName_);
-
     tmp<volScalarField> tConvKE
     (
         new volScalarField
@@ -76,7 +74,7 @@ tmp<volScalarField> Foam::kineticEnergyAnalysis::getConvectionKE()
                 IOobject::NO_READ,
                 IOobject::NO_WRITE
             ),
-            (U_ & C_)
+            (U_ & fvc::div(phi_,U_))
         )
     );
     volScalarField& convKE = tConvKE.ref();
@@ -256,8 +254,8 @@ void Foam::kineticEnergyAnalysis::getPPGradDiffKE()
 Foam::kineticEnergyAnalysis::kineticEnergyAnalysis
 (
     const volVectorField& U,
-    const volScalarField& p,
-    const word convName
+    const surfaceScalarField& phi,
+    const volScalarField& p
 )
 :
     // Set the pointer to runTime
@@ -268,8 +266,8 @@ Foam::kineticEnergyAnalysis::kineticEnergyAnalysis
 
     // Set the pointer to the velocity, flux and pressure-correction field
     U_(U),
-    p_(p),
-    convName_(convName)
+    phi_(phi),
+    p_(p)
 {
 
 }
