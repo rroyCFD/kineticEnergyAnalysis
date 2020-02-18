@@ -38,6 +38,7 @@ SourceFiles
 #include "fvCFD.H"
 #include "IOdictionary.H"
 #include "turbulenceModel.H"
+#include "OFstream.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -70,12 +71,22 @@ class kineticEnergyAnalysis
         // pressure field pointer
         const volScalarField& p_;
 
+        // KE terms
+        dimensionedScalar avgKEBalance_;
+        dimensionedScalar avgDdtKE_;
+        dimensionedScalar avgConvKE_;
+        dimensionedScalar avgGradpKE_;
+        dimensionedScalar avgDisspKE_;
+        dimensionedScalar avgPpGradKE_;
+
+        //- Output file pointer
+        autoPtr<OFstream> KEPropertiesFile_;
+
     // Private member function
         tmp<volScalarField> getTemporalKE();
         tmp<volScalarField> getConvectionKE();
         tmp<volScalarField> getPGradKE();
         tmp<volScalarField> getDissipationKE();
-
 
 public:
 
@@ -100,6 +111,10 @@ public:
         void analyzeKEBalance();
 
         void getPPGradDiffKE();
+
+        void setPropertiesOutput();
+
+        void writeAvgValues();
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
