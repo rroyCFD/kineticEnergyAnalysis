@@ -78,6 +78,7 @@ class kineticEnergyAnalysis
         dimensionedScalar avgGradpKE_;
         dimensionedScalar avgDisspKE_;
         dimensionedScalar avgPpGradKE_;
+        dimensionedScalar avgPDivU_;
 
         //- Output file pointer
         autoPtr<OFstream> KEPropertiesFile_;
@@ -87,6 +88,9 @@ class kineticEnergyAnalysis
         tmp<volScalarField> getConvectionKE();
         tmp<volScalarField> getPGradKE();
         tmp<volScalarField> getDissipationKE();
+
+        void getPPGradDiffKE();
+        void getPDivU();
 
 public:
 
@@ -110,7 +114,7 @@ public:
     // Public Member functions
         void analyzeKEBalance();
 
-        void getPPGradDiffKE();
+        void getAddtionalKETerms();
 
         void setPropertiesOutput();
 

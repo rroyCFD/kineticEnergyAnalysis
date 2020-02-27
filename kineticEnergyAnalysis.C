@@ -241,6 +241,51 @@ void Foam::kineticEnergyAnalysis::getPPGradDiffKE()
 }
 
 
+// the total contribution of the divegence error of collocated velocity
+void Foam::kineticEnergyAnalysis::getPDivU()
+{
+    const volScalarField& pp_ = mesh_.lookupObject<volScalarField>("pp");
+
+    tmp<volScalarField> tgradPpKE
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "gradPpKE",
+                pp_.instance(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            // pp_*fvc::div(U_)
+            p_*fvc::div(U_)
+        )
+    );
+
+    volScalarField& gradPpKE = tgradPpKE.ref();
+    gradPpKE.write(runTime_.outputTime());
+
+    // volume weighted average
+    avgPDivU_ = gradPpKE.weightedAverage(mesh_.V());
+    Info << "\tavg of gradPpKE KE: " << avgPDivU_.value() << endl;
+
+    return;
+}
+
+void Foam::kineticEnergyAnalysis::getAddtionalKETerms()
+{
+    // pressure grad difference KE
+    getPPGradDiffKE();
+
+    // collocated velocity divergence error KE
+    getPDivU();
+
+    return;
+}
+
+
+
 void Foam::kineticEnergyAnalysis::setPropertiesOutput()
 {
     if(Pstream::parRun() && !(Pstream::master()))
@@ -291,7 +336,8 @@ void Foam::kineticEnergyAnalysis::setPropertiesOutput()
         << "avgConvKE(t)" << tab
         << "avgGradpKE(t)" << tab
         << "avgDisspKE(t)" << tab
-        << "avgPpGradKE(t)" << endl;
+        << "avgPpGradKE(t)" << tab
+        << "avgPDivU(t)" << endl;
 
     KEPropertiesFile_().precision(12); // set precision
 
@@ -318,7 +364,8 @@ void Foam::kineticEnergyAnalysis::writeAvgValues()
         << avgConvKE_.value() << tab
         << avgGradpKE_.value() << tab
         << avgDisspKE_.value() << tab
-        << avgPpGradKE_.value() << endl;
+        << avgPpGradKE_.value() << tab
+        << avgPDivU_.value() << endl;
 
     return;
 }
@@ -348,7 +395,8 @@ Foam::kineticEnergyAnalysis::kineticEnergyAnalysis
     avgConvKE_   ("avgConvKE",   dimensionSet(0, 2, -3, 0, 0, 0, 0), 0.0),
     avgGradpKE_  ("avgGradpKE",  dimensionSet(0, 2, -3, 0, 0, 0, 0), 0.0),
     avgDisspKE_  ("avgDisspKE",  dimensionSet(0, 2, -3, 0, 0, 0, 0), 0.0),
-    avgPpGradKE_ ("avgPpGradKE", dimensionSet(0, 2, -3, 0, 0, 0, 0), 0.0)
+    avgPpGradKE_ ("avgPpGradKE", dimensionSet(0, 2, -3, 0, 0, 0, 0), 0.0),
+    avgPDivU_    ("avgPDivU", dimensionSet(0, 2, -3, 0, 0, 0, 0), 0.0)
 {
     // setPropertiesOutput();
     // analyzeKEBalance();
