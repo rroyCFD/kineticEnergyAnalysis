@@ -56,9 +56,6 @@ tmp<volScalarField> Foam::kineticEnergyAnalysis::getTemporalKE()
     volScalarField& temporalKE = tTemporalKE.ref();
     temporalKE.write(runTime_.outputTime());
 
-    // scalar sumTemporalKE = gSum(temporalKE.primitiveFieldRef() * mesh_.V());
-    // Info << "\tsum of temporalDerivative KE: " << sumTemporalKE << endl;
-
     // volume weighted average
     avgDdtKE_ = temporalKE.weightedAverage(mesh_.V());
     Info << "\tavg of temporalDerivative KE: " << avgDdtKE_.value()<< endl;
@@ -85,9 +82,6 @@ tmp<volScalarField> Foam::kineticEnergyAnalysis::getConvectionKE()
     );
     volScalarField& convKE = tConvKE.ref();
     convKE.write(runTime_.outputTime());
-
-    // scalar sumConvKE = gSum(convKE.primitiveFieldRef() * mesh_.V());
-    // Info << "\tsum of convection KE: " << sumConvKE << endl;
 
     // volume weighted average
     avgConvKE_ = convKE.weightedAverage(mesh_.V());
@@ -121,14 +115,9 @@ tmp<volScalarField> Foam::kineticEnergyAnalysis::getPGradKE()
             // (U_ & pGradLS_) // Approach 3
         )
     );
-    // alternate way for assignment
-    // tPGradKE.ref() = (U_ & fvc::grad(p_)); // Approach 1
 
     volScalarField& pGradKE = tPGradKE.ref();
     pGradKE.write(runTime_.outputTime());
-
-    // scalar sumPGradKE = gSum(pGradKE.primitiveFieldRef() * mesh_.V());
-    // Info << "\tsum of pGrad KE: " << sumPGradKE << endl;
 
     // volume weighted average
     avgGradpKE_ = pGradKE.weightedAverage(mesh_.V());
@@ -171,9 +160,6 @@ tmp<volScalarField> Foam::kineticEnergyAnalysis::getDissipationKE()
     volScalarField& dissipKE = tDissipKE.ref();
     dissipKE.write(runTime_.outputTime());
 
-    // scalar sumDissipKE = gSum(dissipKE.primitiveFieldRef() * mesh_.V());
-    // Info << "\tsum of dissipation KE: " << sumDissipKE << endl;
-
     // volume weighted average
     avgDisspKE_ = dissipKE.weightedAverage(mesh_.V());
     Info << "\tavg of dissipation KE: " << avgDisspKE_.value() << endl;
@@ -184,12 +170,6 @@ tmp<volScalarField> Foam::kineticEnergyAnalysis::getDissipationKE()
 // public member functions ---------------------------------------------------//
 void Foam::kineticEnergyAnalysis::analyzeKEBalance()
 {
-    // debug purpose: code check!
-    // volScalarField temporalKE = getTemporalKE();
-    // volScalarField convKE     = getConvectionKE();
-    // volScalarField pGradKE    = getPGradKE();
-    // volScalarField dissipKE   = getDissipationKE();
-
 
     tmp<volScalarField> tKEbalance
     (
@@ -212,19 +192,8 @@ void Foam::kineticEnergyAnalysis::analyzeKEBalance()
             )
         )
     );
-    // alternate way for assignment
-    // tKEbalance.ref() =
-    //     (  getTemporalKE()
-    //      + getConvectionKE()
-    //      + getPGradKE()
-    //      - getDissipationKE()
-    //     );
-
     volScalarField& KEbalance = tKEbalance.ref();
     KEbalance.write(runTime_.outputTime());
-
-    // scalar sumKEbalance = gSum(KEbalance.primitiveFieldRef() * mesh_.V());
-    // Info << "\tsum of KE balance: " << sumKEbalance << endl;
 
     // avgKEBalance_ = (avgDdtKE_+avgConvKE_+avgGradpKE_+avgDisspKE_);
     avgKEBalance_ = KEbalance.weightedAverage(mesh_.V());
@@ -234,7 +203,10 @@ void Foam::kineticEnergyAnalysis::analyzeKEBalance()
 }
 
 
-
+// Error introduced in correcting U after poisson pressure correction of p & phi
+// staggered gradient is used to correct face flux phi
+// collocated gradient of pp is used to correct collocated velocity
+// the term below is difference between to pressure gradient formulations
 void Foam::kineticEnergyAnalysis::getPPGradDiffKE()
 {
     const volScalarField& pp_ = mesh_.lookupObject<volScalarField>("pp");
@@ -258,14 +230,8 @@ void Foam::kineticEnergyAnalysis::getPPGradDiffKE()
         )
     );
 
-    // tppGradDiffKE.ref() =
-    //     U_& ((fvc::grad(pp_)-fvc::reconstruct(fvc::snGrad(pp_)* mesh_.magSf())));
-
     volScalarField& ppGradDiffKE = tppGradDiffKE.ref();
     ppGradDiffKE.write(runTime_.outputTime());
-
-    // scalar sumPPGradDiffKE = gSum(ppGradDiffKE.primitiveFieldRef() * mesh_.V());
-    // Info << "\tsum of ppGradDiff KE: " << sumPPGradDiffKE << endl;
 
     // volume weighted average
     avgPpGradKE_ = ppGradDiffKE.weightedAverage(mesh_.V());
