@@ -50,7 +50,11 @@ tmp<volScalarField> Foam::kineticEnergyAnalysis::getTemporalKE()
                 IOobject::NO_WRITE
             ),
             // (U_ & fvc::ddt(U_))
-            (U_ & (U_ - U_.oldTime()) /runTime_.deltaT() )
+            // Inaccurate: U^(n+1) * (U^(n+1) - U^n)/dt
+            // (U_ & (U_ - U_.oldTime()) /runTime_.deltaT() )
+
+            // Accurate: ((U^(n+1))^2 - (U^n)^2)/dt
+            0.5*((magSqr(U_) - magSqr(U_.oldTime())) /runTime_.deltaT())
         )
     );
     volScalarField& temporalKE = tTemporalKE.ref();
